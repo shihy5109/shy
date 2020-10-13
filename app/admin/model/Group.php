@@ -20,13 +20,13 @@ class Group extends Model
     protected $createTime='created_time';
     protected $updataTime='updated_time';
 
-    static function del($id){
-        $group = self::find($id);
-        if ($group && $id) {
+    static function del($data){
+        $group = self::find($data['id']);
+        if ($group && $data['id']) {
             $group->status = 0;
             $result = $group->save();
             if ($result) {
-                Common::insertLog($id,'删除用户名为'.$group->getAttr('name').'的管理员');
+                Common::insertLog($data['admin_id'],'删除用户名为'.$group->getAttr('name').'的管理员');
                 return response(200, '删除成功');
             }
         }

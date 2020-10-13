@@ -10,6 +10,7 @@ Route::rule('add','admin/index/add','POST');
 Route::rule('delete','admin/index/delete','GET');
 Route::rule('status','admin/index/status','GET');
 Route::rule('photo','admin/index/photo');
+Route::rule('video','admin/index/video');
 Route::rule('excel_get','admin/index/excel_get');
 Route::rule('excel_put','admin/index/excel_put');
 Route::rule('test','admin/index/test','GET|POST'); //测试
@@ -26,3 +27,4 @@ Route::rule('menu/index','admin/menu/index');
 Route::rule('menu/update','admin/menu/update');
 Route::rule('menu/delete','admin/menu/delete');
 Route::rule('menu/authority','admin/menu/authority');
+Route::rule('menu/log','admin/menu/log');

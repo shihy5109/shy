@@ -47,9 +47,9 @@ class Rbac extends BaseController
 
 
     //删除
-    public function delete($id){
+    public function delete(){
         verify_data('id', $this->data);
-        return Group::del($id);
+        return Group::del($this->data);
     }
 
     //给角色配置权限

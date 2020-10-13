@@ -3,16 +3,22 @@ declare (strict_types=1);
 
 namespace app\admin\controller;
 
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use app\admin\model\Admin;
 use app\admin\model\Verification;
 use app\common\Common;
+use Exception;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use think\App;
 use think\cache\driver\Redis;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\DbException;
+use think\db\exception\ModelNotFoundException;
 use think\facade\Db;
 use think\facade\Request;
 use think\facade\View;
+use think\response\Json;
+use ZipArchive;
 use function app\common\response;
 use function app\common\verify_data;
 
@@ -39,7 +45,6 @@ class Index extends BaseController
             }
             return response(500, 'Incorrect username or password');
         } else {
-            //验证码
             $code = new Verification();
             $random = sha1((string)time());
             $redis->set('captcha_' . $random, $code->code, 120);
@@ -101,19 +106,27 @@ class Index extends BaseController
     }
 
 
-    //上传图片
+    //上传图片,视频
     public function photo()
     {
+        var_dump($_FILES);
+        die;
         $time = date('YmdHis');
         if ($_FILES["file"]["error"]) {
             return response(500, $_FILES["file"]["error"]);
         } else {
-            if (($_FILES["file"]["type"] == "image/png" || $_FILES["file"]["type"] == "image/jpeg" || $_FILES["file"]["type"] == "image/jpg" || $_FILES["file"]["type"] == "image/gif") && $_FILES["file"]["size"] < 1024000 * 3) {
+            if (($_FILES["file"]["type"] == "video/mp4" || $_FILES["file"]["type"] == "image/png" || $_FILES["file"]["type"] == "image/jpeg" || $_FILES["file"]["type"] == "image/jpg" || $_FILES["file"]["type"] == "image/gif") && $_FILES["file"]["size"] < 1024000 * 3) {
+                if ($_FILES["file"]["type"] == "video/mp4") {
+                    $filename = \think\facade\App::getRootPath() . '/public/static/img/' . $time . '.mp4';
+                    $filename = iconv("UTF-8", "gb2312", $filename);
+                    move_uploaded_file($_FILES["file"]["tmp_name"], $filename);//将临时地址移动到指定地址
+                    $url = Request::host() . '/images/' . $time . '.mp4';
+                    return response(200, '成功', ['url' => $url]);
+                }
                 $filename = \think\facade\App::getRootPath() . '/public/static/img/' . $time . '.jpg';
                 $filename = iconv("UTF-8", "gb2312", $filename);
                 move_uploaded_file($_FILES["file"]["tmp_name"], $filename);//将临时地址移动到指定地址
                 $url = Request::host() . '/images/' . $time . '.jpg';
-
                 return response(200, '成功', ['url' => $url]);
             } else {
                 return response(500, '文件类型不对');
@@ -121,6 +134,52 @@ class Index extends BaseController
         }
     }
 
+
+    //导入图片压缩包 压缩并获取图片名称保存数据库 上传云服务器
+    public function video()
+    {
+        Db::startTrans();
+        try {
+            if ($_FILES["file"]["error"]) {
+                return response(500, $_FILES["file"]["error"]);
+            } else {
+                if ($_FILES["file"]["type"] == "application/zip") {
+                    $filename = \think\facade\App::getRootPath() . '/public/static/zip/' . $_FILES["file"]["name"];
+                    $filename = iconv("UTF-8", "gb2312", $filename);
+                    move_uploaded_file($_FILES["file"]["tmp_name"], $filename);//将临时地址移动到指定地址
+                    $zip = new ZipArchive();
+                    $res = $zip->open($filename);
+                    if ($res === TRUE) {
+                        $unzip_url = \think\facade\App::getRootPath() . '/public/static/img/';
+                        $zip->extractTo($unzip_url);
+                        $zip->close();
+                        $goods_name = mb_substr($_FILES["file"]["name"], 0, -4);
+                        $dir = $unzip_url . $goods_name;
+                        $handle = opendir($dir . ".");
+                        while (false !== ($file = readdir($handle))) {
+                            if ($file != "." && $file != "..") {
+                                $img_file = Request::domain() . '/static/unzip/' . $goods_name . '/' . $file;
+                                //根据图片名称去找商品货号 保存url
+
+                            }
+                        }
+                        closedir($handle);
+                        Db::commit();
+                        return response(200);
+                    } else {
+                        return response(500, 'failed, code:' . $res);
+                    }
+
+                } else {
+                    return response(500, '文件类型不对');
+                }
+            }
+        } catch (Exception $e) {
+            Db::rollback();
+            return response(500, $e->getMessage());
+        }
+
+    }
 
     //导出excel
     public function excel_put()
@@ -132,55 +191,15 @@ class Index extends BaseController
 
 
     //导入excel数据
-    public function excel_get(){
-        $reader = IOFactory::createReader('Xlsx');
-        $spreadsheet = $reader->load($_FILES['excel']['tmp_name']);
-        foreach ( $spreadsheet->getWorksheetIterator() as $cell ) {
-            $cells = $cell->toArray();
-        }
-        unset($cells[0]);
-        foreach ( $cells as $key=>$cell ) {
-            var_dump($cells);die;
-            // 添加或更新数据
-        }
-    }
-
-
-    /**
-     * 删除
-     * @param $id
-     * @return \think\response\Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
-     */
-    public function delete($id)
-    {
-        verify_data('id', $this->data);
-        return Admin::del($id);
-    }
-
-
-    /**
-     * 修改状态
-     * @param $admin_id
-     * @param $status
-     */
-    public function status($admin_id, $status)
-    {
-        verify_data('admin_id,status', $this->data);
-        return Admin::status($admin_id, $status);
-    }
-
 
     /**
      * 导出Excel表格 Xlsx格式(2007版)
      *
      * @datetime 2019-12-22
      *
-     * @param  array  $title    表头单元格内容
-     * @param  array  $data     从第二行开始写入的数据
-     * @param  string $path 	Excel文件保存位置,路径中的目录必须存在
+     * @param array $title 表头单元格内容
+     * @param array $data 从第二行开始写入的数据
+     * @param string $path Excel文件保存位置,路径中的目录必须存在
      *
      * @return null 没有设定返回值
      */
@@ -213,8 +232,48 @@ class Index extends BaseController
 
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
         $filename = Common::random_string();
-        $writer->save($filename.'.xlsx');
-        return  $filename.'xlsx';
+        $writer->save($filename . '.xlsx');
+        return $filename . 'xlsx';
+    }
+
+    public function excel_get()
+    {
+        $reader = IOFactory::createReader('Xlsx');
+        $spreadsheet = $reader->load($_FILES['excel']['tmp_name']);
+        foreach ($spreadsheet->getWorksheetIterator() as $cell) {
+            $cells = $cell->toArray();
+        }
+        unset($cells[0]);
+        foreach ($cells as $key => $cell) {
+            var_dump($cells);
+            die;
+            // 添加或更新数据
+        }
+    }
+
+    /**
+     * 删除
+     * @param $id
+     * @return Json
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
+     */
+    public function delete($id)
+    {
+        verify_data('id', $this->data);
+        return Admin::del($id);
+    }
+
+    /**
+     * 修改状态
+     * @param $admin_id
+     * @param $status
+     */
+    public function status($admin_id, $status)
+    {
+        verify_data('admin_id,status', $this->data);
+        return Admin::status($admin_id, $status);
     }
 
 }

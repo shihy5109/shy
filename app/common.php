@@ -39,10 +39,11 @@ class Common
 /**
  * @param $prams //我需要的字段（字符串） , 隔开
  * @param $v_data //前端数据
+ * @param $type //
  * @return false|string
  */
 if (!function_exists('verify_data')) {
-    function verify_data($prams, $v_data)
+    function verify_data($prams, $v_data,$type=1)
     {
         $prams = explode(',', $prams);
 
@@ -52,6 +53,10 @@ if (!function_exists('verify_data')) {
                 'msg' => '缺少字段:'.$v,
                 'data' => [],
             ];
+            if($type == 2){
+                $result['page'] = 0;
+                $result['page_number'] = 10;
+            }
             if (!array_key_exists($v, $v_data)) {
                 echo  json_encode($result);die;
             }
@@ -65,18 +70,25 @@ if (!function_exists('verify_data')) {
         }
     }
 }
-/**
- * @param int $status //状态码 200成功 500错误
- * @param string $msg
- * @param array $data //数据
- */
+
 if (!function_exists('response')) {
+    /**
+     * @param int $status
+     * @param string $msg
+     * @param array $data
+//     * @param int $page
+//     * @param int $page_number
+     * @return \think\response\Json
+     */
+//    $page = 1,$page_number = 10
     function response($status = 200, $msg = '', $data = [])
     {
         $result = [
             'status' => $status,
             'msg' => $msg,
-            'data' => $data?:[],
+            'data' => $data?:(object)[],
+//            'page' => $page,
+//            'page_number' => $page_number,
         ];
         return json($result);
 

@@ -19,3 +19,10 @@ Route::rule('rbac/index','admin/rbac/index');
 Route::rule('rbac/update','admin/rbac/update');
 Route::rule('rbac/delete','admin/rbac/delete');
 Route::rule('rbac/authority','admin/rbac/authority');
+
+
+//menu
+Route::rule('menu/index','admin/menu/index');
+Route::rule('menu/update','admin/menu/update');
+Route::rule('menu/delete','admin/menu/delete');
+Route::rule('menu/authority','admin/menu/authority');

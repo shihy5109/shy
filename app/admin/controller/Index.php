@@ -1,6 +1,10 @@
 <?php
 declare (strict_types=1);
-
+/**
+ * Created by Shy
+ * Date 2020/10/13
+ * Time 13:45
+ */
 namespace app\admin\controller;
 
 use app\admin\model\Admin;
@@ -136,7 +140,7 @@ class Index extends BaseController
 
 
     //导入图片压缩包 压缩并获取图片名称保存数据库 上传云服务器
-    public function video()
+    public function unzip()
     {
         Db::startTrans();
         try {
@@ -153,19 +157,26 @@ class Index extends BaseController
                         $unzip_url = \think\facade\App::getRootPath() . '/public/static/img/';
                         $zip->extractTo($unzip_url);
                         $zip->close();
-                        $goods_name = mb_substr($_FILES["file"]["name"], 0, -4);
-                        $dir = $unzip_url . $goods_name;
+                        $folder_name = mb_substr($_FILES["file"]["name"], 0, -4);
+                        $dir = $unzip_url . $folder_name;
                         $handle = opendir($dir . ".");
+                        $arr = [];
                         while (false !== ($file = readdir($handle))) {
                             if ($file != "." && $file != "..") {
-                                $img_file = Request::domain() . '/static/unzip/' . $goods_name . '/' . $file;
+                                $arr[$file]['img_file'] = Request::domain() . '/static/img/' . $folder_name . '/' . $file;
                                 //根据图片名称去找商品货号 保存url
-
+                                $arr[$file]['goods_no'] = mb_substr($file,0,strpos($file, '.'));
                             }
+                        }
+                        return response(200,'成功');
+                        var_dump(array_values($arr));die;
+                        if(!empty($arr)){
+                            //保存数据库
+                            $goods = new Goods();
+                            $goods->replace()->saveAll(array_values($arr));
                         }
                         closedir($handle);
                         Db::commit();
-                        return response(200);
                     } else {
                         return response(500, 'failed, code:' . $res);
                     }
@@ -180,6 +191,7 @@ class Index extends BaseController
         }
 
     }
+
 
     //导出excel
     public function excel_put()

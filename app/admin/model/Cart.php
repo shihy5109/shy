@@ -116,12 +116,13 @@ class Cart extends Model
     /**
      * 删除购物车
      * @param $data
+     * @param int $type
      * @return Json
      * @throws DataNotFoundException
      * @throws DbException
      * @throws ModelNotFoundException
      */
-    static function delCart($data)
+    static function delCart($data,$type=1)
     {
         $id = $data['ids'];
         $arr = self::where("id in ($id)")->field('g_id,num')->select()->toArray();
@@ -129,11 +130,14 @@ class Cart extends Model
         $res = $result->select();
         if ($res->delete()) {
             //还远商品库存
-            foreach ($arr as $v) {
-                $model = Goods::find($v['g_id']);
-                $model->num += $v['num'];
-                $model->save();
+            if($type == 2){
+                foreach ($arr as $v) {
+                    $model = Goods::find($v['g_id']);
+                    $model->num += $v['num'];
+                    $model->save();
+                }
             }
+
             return response(200, '成功');
         }
         return response(500);

@@ -52,8 +52,8 @@ class Goods extends Model
 //                $arr_order_goods[$v]['amount'] -= $user_rebate;
                 }
                 //组装order
-                $arr_order_amount = array_sum(array_column(array_values($arr_order_goods), 'amount'));
-                $arr_order_discount = array_sum(array_column(array_values($arr_order_goods), 'discount'));
+                $arr_order_amount = round(array_sum(array_column(array_values($arr_order_goods), 'amount')),3)?:'0.000';
+                $arr_order_discount = round(array_sum(array_column(array_values($arr_order_goods), 'discount')),3)?:'0.000';
                 $arr_order['order'] = 'E' . date("YmdHis") . rand(1000, 9999);
                 $arr_order['user_id'] = $data['user_id'];
                 $arr_order['amount'] = $arr_order_amount - $user_rebate ?: 0;
@@ -69,13 +69,14 @@ class Goods extends Model
                 if (!$order_goods->replace()->saveAll(array_values($arr_order_goods))) {
                     return response(500, '订单创建失败');
                 }
-                $cart_ids = implode(',', $data['carts']);
-                Cart::delCart($cart_ids);
+                $cart_ids['ids'] = implode(',', $data['carts']);
+                Cart::delCart($cart_ids,2);
                 Db::commit();
                 return response(200, '购买成功');
             }
             return response(500, '购物车为空');
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             Db::rollback();
             return response(500, $e->getMessage());
         }

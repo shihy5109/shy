@@ -11,3 +11,8 @@ use \think\facade\Route;
 Route::rule('order/addCart','api/order/addCart');
 Route::rule('order/delCart','api/order/delCart');
 
+
+
+Route::rule('goods/add','api/goods/add');
+Route::rule('goods/delCart','api/order/delCart');
+

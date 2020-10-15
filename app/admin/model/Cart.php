@@ -22,17 +22,18 @@ class Cart extends Model
 {
 
 
-    protected $createTime='created_time';
-    protected $updataTime='updated_time';
+    protected $createTime = 'created_time';
+    protected $updataTime = 'updated_time';
 
 
+    /**
+     * 1对1  goods
+     * @return \think\model\relation\HasOne
+     */
     public function goods()
     {
         return $this->hasOne(Goods::class, 'g_id', 'g_id');
     }
-
-
-
 
     /**
      * 添加购物车
@@ -50,10 +51,14 @@ class Cart extends Model
         try {
             if (!empty($data)) {
                 //寻找购物车中是否有当前商品的信息
-                $carts = self::where(['g_id'=>$data['g_id'],'user_id'=>$data['user_id']])->find();
+                $carts = self::where(['g_id' => $data['g_id'], 'user_id' => $data['user_id']])->find();
                 $g_goods = Goods::find($data['g_id']);
-                if ($g_goods->status == 0) {return response(500, '商品已下架');}
-                if (($g_goods->num - $data['num']) < 0 ) {return response(500, '库存不足');}
+                if ($g_goods->status < 1 ) {
+                    return response(500, '商品已下架');
+                }
+                if (($g_goods->num - $data['num']) < 0) {
+                    return response(500, '库存不足');
+                }
                 //还原商品库存
                 $g_arr_num = $g_goods->num - $data['num'];
                 if ($carts) {
@@ -72,7 +77,7 @@ class Cart extends Model
                             return response(500, '金额错误,联系客服');
                         }
                         //还原商品库存
-                        $g_arr_num= $g_goods->num + $data['num'];
+                        $g_arr_num = $g_goods->num + $data['num'];
                     }
                     $cart = [
                         'id' => $carts->id,
@@ -87,7 +92,7 @@ class Cart extends Model
                     ];
                 }
 
-                $g_arr = ['g_id'=>$g_goods->g_id,'num'=>$g_arr_num];
+                $g_arr = ['g_id' => $g_goods->g_id, 'num' => $g_arr_num];
 
 
                 if (!$g_goods->save($g_arr)) {
@@ -95,7 +100,7 @@ class Cart extends Model
                 }
                 if ($carts->replace()->save($cart)) {
                     //为0后清除购物车
-                    if($carts->num == 0 && $carts->amount == 0){
+                    if ($carts->num == 0 && $carts->amount == 0) {
                         $carts->delete();
                     }
                     Db::commit();
@@ -116,13 +121,24 @@ class Cart extends Model
      * @throws DbException
      * @throws ModelNotFoundException
      */
-    static function delCart($data){
+    static function delCart($data)
+    {
         $id = $data['ids'];
-        $res =  self::where("id in ($id)")->select();
-        if($res->delete()){
-            return response(200,'成功');
+        $arr = self::where("id in ($id)")->field('g_id,num')->select()->toArray();
+        $result = self::where("id in ($id)");
+        $res = $result->select();
+        if ($res->delete()) {
+            //还远商品库存
+            foreach ($arr as $v) {
+                $model = Goods::find($v['g_id']);
+                $model->num += $v['num'];
+                $model->save();
+            }
+            return response(200, '成功');
         }
         return response(500);
     }
+
+
 
 }

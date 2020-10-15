@@ -17,6 +17,11 @@ use function app\common\verify_data;
 class Order extends BaseController
 {
 
+    public function index(){
+
+    }
+
+
     /**
      * 添加购物车
      * 判断用户购物车中是否有数据 如果有就加入
@@ -29,6 +34,9 @@ class Order extends BaseController
     /**
      * 删除购物车
      * @return \think\response\Json
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
      */
     public function delCart(){
         verify_data('ids',$this->data);

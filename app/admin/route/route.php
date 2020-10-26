@@ -40,3 +40,8 @@ Route::rule('categories/add','admin/categories/add');
 Route::rule('categories/update','admin/categories/update');
 Route::rule('categories/delete','admin/categories/delete');
 Route::rule('categories/sort','admin/categories/sort');
+
+
+
+//swoole
+Route::rule('tcp/demo','admin/tcp/demo');

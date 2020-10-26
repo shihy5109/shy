@@ -44,10 +44,12 @@ class Rbac extends BaseController
         }
     }
 
+
+
     //删除
-    public function delete($id){
+    public function delete(){
         verify_data('id', $this->data);
-        return Group::del($id);
+        return Group::del($this->data);
     }
 
     //给角色配置权限
@@ -68,17 +70,18 @@ class Rbac extends BaseController
                 $rule = new Rule();
                 if($rule->replace()->saveAll($this->data['authority'])){
                     Db::commit();
+                    Common::insertLog($this->data['admin_id'],$this->data['admin_id'].'修改'.$group->name.'用户组');
                     return response(200,'配置完成');
                 }
             }
             return response(500,'用户组不存在');
         } catch (\Exception $e) {
-            // 回滚事务
             Db::rollback();
             return response(500,$e->getMessage());
         }
 
     }
+
 
 
 }

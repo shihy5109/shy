@@ -22,14 +22,14 @@ class TcpServer
         //如果业务代码为同步 IO，worker_num需要根据请求响应时间和系统负载来调整，例如：100-500
         //假设每个进程占用 40M 内存，100 个进程就需要占用 4G 内存
         $this->serv->set(array(
-            'worker_num' => 4,         //设置启动的worker进程数。【默认值：CPU 核数】
+            'worker_num' => 2,         //设置启动的worker进程数。【默认值：CPU 核数】
             'max_request' => 10000,    //设置每个worker进程的最大任务数。【默认值：0 即不会退出进程】
             'daemonize' => 0,          //守护进程化【默认值：0】
         ));
 
         //监听链接进入事件
         $this->serv->on('connect', function ($serv, $fd) {
-            echo '链接成功';
+            echo '链接成功<br/>';
         });
 
         //监听数据接收事件

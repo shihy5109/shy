@@ -76,8 +76,6 @@ if (!function_exists('response')) {
      * @param int $status
      * @param string $msg
      * @param array $data
-//     * @param int $page
-//     * @param int $page_number
      * @return \think\response\Json
      */
 //    $page = 1,$page_number = 10
